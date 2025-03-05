@@ -3,6 +3,7 @@ import { cn } from "@/lib/utils";
 import React, { useCallback, useState } from "react";
 import { useDropzone } from "react-dropzone";
 import { Button } from "./Button";
+import { Upload, Image } from "lucide-react";
 
 interface UploadAreaProps {
   onImageUpload: (file: File) => void;
@@ -38,35 +39,29 @@ export const UploadArea: React.FC<UploadAreaProps> = ({ onImageUpload, className
       {...getRootProps()}
       className={cn(
         "relative flex flex-col items-center justify-center w-full rounded-xl p-8 transition-all",
-        "bg-secondary/50 border-2 border-dashed outline-none",
-        "backdrop-blur-xs",
+        "border-2 border-dashed outline-none",
+        "hover:border-accent/70 hover:bg-accent/5",
         {
-          "border-accent bg-accent/5": isDragging,
-          "border-muted-foreground/20": !isDragging,
+          "border-accent bg-accent/5 scale-[1.02]": isDragging,
+          "border-muted-foreground/20 bg-secondary/50": !isDragging,
         },
         className
       )}
     >
       <input {...getInputProps()} />
-      <div className="flex flex-col items-center gap-4 animate-fade-in">
-        <div className="rounded-full bg-secondary p-4">
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            className="h-6 w-6 text-muted-foreground"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={1.5}
-              d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
-            />
-          </svg>
+      <div className="flex flex-col items-center gap-4 animate-fade-in text-center">
+        <div className="rounded-full bg-secondary p-4 animate-fade-in">
+          <Image
+            className="h-8 w-8 text-primary transition-transform"
+            style={{ 
+              transform: isDragging ? 'scale(1.2) translateY(-4px)' : 'scale(1) translateY(0)'
+            }}
+          />
         </div>
-        <div className="flex flex-col items-center gap-1 text-center">
-          <span className="text-lg font-medium animate-slide-down">Drop your image here</span>
+        <div className="flex flex-col items-center gap-1">
+          <span className="text-lg font-medium animate-slide-down">
+            {isDragging ? "Drop your image here" : "Upload your image"}
+          </span>
           <span className="text-sm text-muted-foreground animate-slide-down">
             or click the button below to browse
           </span>
@@ -77,8 +72,9 @@ export const UploadArea: React.FC<UploadAreaProps> = ({ onImageUpload, className
             e.stopPropagation();
             open();
           }}
-          className="mt-2 animate-slide-up"
+          className="mt-2 animate-slide-up flex items-center gap-2"
         >
+          <Upload className="h-4 w-4" />
           Select Image
         </Button>
       </div>
