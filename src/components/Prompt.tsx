@@ -19,15 +19,20 @@ export const Prompt: React.FC<PromptProps> = ({ onSubmit, isLoading, disabled = 
   };
 
   const predefinedPrompts = [
-    "Coffee tone",
-    "Cinematic orange and teal",
-    "Warm vintage film look",
-    "Cold blue night aesthetic",
-    "High contrast black and white",
-    "Soft pastel tones",
-    "Moody dark shadows",
-    "Summer vibrant colors",
-    "Cyberpunk neon glow"
+    "Autumn woodland style",
+    "Golden hour sunset glow",
+    "Cinematic teal and orange",
+    "Vibrant film look",
+    "Warm vintage analog",
+    "Muted pastel aesthetic",
+    "Rich moody tones",
+    "Dreamy soft portrait",
+    "Dramatic high contrast",
+    "Coffee tone with creamy highlights",
+    "Nordic cool blue",
+    "Desert warm amber",
+    "Forest green nature",
+    "Cyberpunk neon style"
   ];
   
   const randomPlaceholder = predefinedPrompts[Math.floor(Math.random() * predefinedPrompts.length)];
@@ -60,7 +65,7 @@ export const Prompt: React.FC<PromptProps> = ({ onSubmit, isLoading, disabled = 
           </Button>
         </div>
         <p className="text-xs text-muted-foreground mt-2 ml-1 mb-3">
-          Tip: Be specific about colors, mood, and style for best results
+          Tip: Be specific about mood, time of day, and color palette for best results
         </p>
         
         {/* Predefined prompt suggestions */}

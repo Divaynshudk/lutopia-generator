@@ -21,8 +21,8 @@ export function generateCubeLUT(
   transformFn: (rgba: RGBA) => RGBA,
   lutSize: number = LUT_SIZE
 ): string {
-  let cubeData = `# Created with LUTs Generator\n`;
-  cubeData += `# https://lovable.dev/\n\n`;
+  let cubeData = `# Created with Vision Grade LUTs Generator\n`;
+  cubeData += `# https://visiongrade.com/\n\n`;
   cubeData += `LUT_3D_SIZE ${lutSize}\n\n`;
 
   // Generate the LUT data points
@@ -103,24 +103,218 @@ function hslToRgb(h: number, s: number, l: number): [number, number, number] {
 }
 
 /**
+ * RGB to OKLAB color space conversion for more perceptually uniform transformations
+ * OKLAB provides better perceptual uniformity than HSL
+ */
+function rgbToOklab(r: number, g: number, b: number): [number, number, number] {
+  // Convert RGB to linear RGB
+  const linearR = r <= 0.04045 ? r / 12.92 : Math.pow((r + 0.055) / 1.055, 2.4);
+  const linearG = g <= 0.04045 ? g / 12.92 : Math.pow((g + 0.055) / 1.055, 2.4);
+  const linearB = b <= 0.04045 ? b / 12.92 : Math.pow((b + 0.055) / 1.055, 2.4);
+
+  // Convert to XYZ
+  const x = 0.4124 * linearR + 0.3576 * linearG + 0.1805 * linearB;
+  const y = 0.2126 * linearR + 0.7152 * linearG + 0.0722 * linearB;
+  const z = 0.0193 * linearR + 0.1192 * linearG + 0.9505 * linearB;
+
+  // Convert to LMS
+  const l = 0.8189 * x + 0.3618 * y - 0.1288 * z;
+  const m = 0.0329 * x + 0.9293 * y + 0.0361 * z;
+  const s = 0.0482 * x + 0.2621 * y + 0.6839 * z;
+
+  // Convert to OKLab
+  const L = 0.2104 * Math.cbrt(l) + 0.7936 * Math.cbrt(m) - 0.0040 * Math.cbrt(s);
+  const a = 1.9779 * Math.cbrt(l) - 2.4285 * Math.cbrt(m) + 0.4505 * Math.cbrt(s);
+  const b_val = 0.0259 * Math.cbrt(l) + 0.7827 * Math.cbrt(m) - 0.8086 * Math.cbrt(s);
+
+  return [L, a, b_val];
+}
+
+/**
+ * OKLAB to RGB color space conversion
+ */
+function oklabToRgb(L: number, a: number, b: number): [number, number, number] {
+  // Convert to LMS
+  const l = Math.pow(L + 0.3963377774 * a + 0.2158037573 * b, 3);
+  const m = Math.pow(L - 0.1055613458 * a - 0.0638541728 * b, 3);
+  const s = Math.pow(L - 0.0894841775 * a - 1.2914855480 * b, 3);
+
+  // Convert to XYZ
+  const x = 1.2268798733 * l - 0.5578149965 * m + 0.2813910503 * s;
+  const y = -0.0405757684 * l + 1.1122868293 * m - 0.0717110612 * s;
+  const z = -0.0763729347 * l - 0.4214933399 * m + 1.5869240244 * s;
+
+  // Convert to linear RGB
+  const linearR = 3.2404542 * x - 1.5371385 * y - 0.4985314 * z;
+  const linearG = -0.9692660 * x + 1.8760108 * y + 0.0415560 * z;
+  const linearB = 0.0556434 * x - 0.2040259 * y + 1.0572252 * z;
+
+  // Convert to sRGB
+  const r = linearR <= 0.0031308 ? 12.92 * linearR : 1.055 * Math.pow(linearR, 1/2.4) - 0.055;
+  const g = linearG <= 0.0031308 ? 12.92 * linearG : 1.055 * Math.pow(linearG, 1/2.4) - 0.055;
+  const b_out = linearB <= 0.0031308 ? 12.92 * linearB : 1.055 * Math.pow(linearB, 1/2.4) - 0.055;
+
+  return [
+    Math.max(0, Math.min(1, r)),
+    Math.max(0, Math.min(1, g)),
+    Math.max(0, Math.min(1, b_out))
+  ];
+}
+
+/**
+ * Apply S-Curve contrast to a value
+ */
+function applySCurve(value: number, strength: number = 0.3): number {
+  return (1 / (1 + Math.exp(-strength * (value - 0.5) * 12))) * 0.98 + 0.01;
+}
+
+/**
+ * Advanced color temperature adjustment
+ */
+function adjustColorTemperature(rgba: RGBA, temperature: number): RGBA {
+  // Temperature ranges from -1 (cool/blue) to 1 (warm/orange)
+  const [r, g, b] = [rgba.r, rgba.g, rgba.b];
+  
+  let result = {...rgba};
+  
+  if (temperature > 0) {
+    // Warm (increase red, decrease blue)
+    result.r = Math.min(1, r + temperature * 0.2);
+    result.b = Math.max(0, b - temperature * 0.1);
+  } else {
+    // Cool (increase blue, decrease red)
+    result.b = Math.min(1, b - temperature * 0.2);
+    result.r = Math.max(0, r + temperature * 0.1);
+  }
+  
+  return result;
+}
+
+/**
+ * Film-like highlight roll-off function
+ */
+function filmHighlightRolloff(value: number, strength: number = 0.7): number {
+  if (value <= 0.7) return value;
+  const x = (value - 0.7) / 0.3;
+  return 0.7 + 0.3 * (1 - Math.pow(1 - x, strength));
+}
+
+/**
+ * Enhanced shadow recovery
+ */
+function enhanceShadows(value: number, strength: number = 0.3): number {
+  if (value >= 0.3) return value;
+  const x = value / 0.3;
+  return 0.3 * Math.pow(x, 1 - strength);
+}
+
+/**
+ * Cross-processed look effect
+ */
+function applyCrossProcessing(rgba: RGBA, strength: number = 0.5): RGBA {
+  let [h, s, l] = rgbToHsl(rgba.r, rgba.g, rgba.b);
+  
+  // Shift shadow tones towards teal
+  if (l < 0.4) {
+    h = (h * 0.7 + 0.5 * 0.3) % 1;
+    s = Math.min(1, s * (1 + strength * 0.3));
+  }
+  
+  // Shift highlights towards yellow/orange
+  if (l > 0.6) {
+    h = (h * 0.7 + 0.12 * 0.3) % 1;
+    s = Math.min(1, s * (1 + strength * 0.2));
+  }
+  
+  const [r, g, b] = hslToRgb(h, s, l);
+  return {
+    r: Math.max(0, Math.min(1, r)),
+    g: Math.max(0, Math.min(1, g)),
+    b: Math.max(0, Math.min(1, b)),
+    a: rgba.a
+  };
+}
+
+/**
+ * Apply a split-tone effect (different colors for shadows and highlights)
+ */
+function applySplitTone(
+  rgba: RGBA, 
+  shadowHue: number,
+  shadowStrength: number,
+  highlightHue: number,
+  highlightStrength: number
+): RGBA {
+  let [h, s, l] = rgbToHsl(rgba.r, rgba.g, rgba.b);
+  
+  if (l < 0.5) {
+    // Shadows
+    const mixFactor = (0.5 - l) * 2 * shadowStrength;
+    h = h * (1 - mixFactor) + shadowHue * mixFactor;
+    s = Math.min(1, s * (1 + shadowStrength * 0.3));
+  } else {
+    // Highlights
+    const mixFactor = (l - 0.5) * 2 * highlightStrength;
+    h = h * (1 - mixFactor) + highlightHue * mixFactor;
+    s = Math.min(1, s * (1 + highlightStrength * 0.3));
+  }
+  
+  const [r, g, b] = hslToRgb(h, s, l);
+  return {
+    r: Math.max(0, Math.min(1, r)),
+    g: Math.max(0, Math.min(1, g)),
+    b: Math.max(0, Math.min(1, b)),
+    a: rgba.a
+  };
+}
+
+/**
+ * Apply a "filmic" look with tone mapping
+ */
+function applyFilmicToneMapping(rgba: RGBA, strength: number = 0.8): RGBA {
+  const a = 0.15;
+  const b = 0.50;
+  const c = 0.10;
+  const d = 0.20;
+  const e = 0.02;
+  const f = 0.30;
+  
+  const applyACES = (x: number): number => {
+    return (x * (a * x + c * b) + d * e) / (x * (a * x + b) + d * f) - e / f;
+  };
+  
+  // Mix between original and ACES-mapped value based on strength
+  const r = rgba.r * (1 - strength) + applyACES(rgba.r) * strength;
+  const g = rgba.g * (1 - strength) + applyACES(rgba.g) * strength;
+  const b = rgba.b * (1 - strength) + applyACES(rgba.b) * strength;
+  
+  return {
+    r: Math.max(0, Math.min(1, r)),
+    g: Math.max(0, Math.min(1, g)),
+    b: Math.max(0, Math.min(1, b)),
+    a: rgba.a
+  };
+}
+
+/**
  * Create a transformation based on a text prompt (enhanced version)
  */
 export function createTransformationFromPrompt(prompt: string): (rgba: RGBA) => RGBA {
   const promptLower = prompt.toLowerCase();
   
-  // Enhanced prompt analysis with more options
+  // Enhanced prompt analysis with more advanced algorithms for the example image style
   const isCinematic = promptLower.includes('cinematic');
-  const isWarm = promptLower.includes('warm');
+  const isWarm = promptLower.includes('warm') || promptLower.includes('golden') || promptLower.includes('sunset');
   const isCold = promptLower.includes('cold') || promptLower.includes('blue') || promptLower.includes('cool');
-  const isVintage = promptLower.includes('vintage') || promptLower.includes('film') || promptLower.includes('retro');
-  const isHighContrast = promptLower.includes('contrast') || promptLower.includes('punchy');
+  const isVintage = promptLower.includes('vintage') || promptLower.includes('film') || promptLower.includes('retro') || promptLower.includes('analog');
+  const isHighContrast = promptLower.includes('contrast') || promptLower.includes('punchy') || promptLower.includes('dramatic');
   const isBW = promptLower.includes('black and white') || promptLower.includes('b&w') || promptLower.includes('monochrome');
   const isTeal = promptLower.includes('teal');
   const isOrange = promptLower.includes('orange');
   const isPastel = promptLower.includes('pastel') || promptLower.includes('soft');
   const isMoody = promptLower.includes('moody') || promptLower.includes('dark') || promptLower.includes('dramatic');
   const isSummer = promptLower.includes('summer') || promptLower.includes('sunny') || promptLower.includes('tropical');
-  const isGreen = promptLower.includes('green');
+  const isGreen = promptLower.includes('green') || promptLower.includes('forest');
   const isPurple = promptLower.includes('purple') || promptLower.includes('magenta');
   const isYellow = promptLower.includes('yellow') || promptLower.includes('gold');
   const isFaded = promptLower.includes('faded') || promptLower.includes('matte');
@@ -133,10 +327,29 @@ export function createTransformationFromPrompt(prompt: string): (rgba: RGBA) => 
   const isBlueHour = promptLower.includes('blue hour') || promptLower.includes('twilight');
   const isGoldenHour = promptLower.includes('golden hour') || promptLower.includes('sunset');
   const isNight = promptLower.includes('night') || promptLower.includes('dark');
-  const isSoft = promptLower.includes('soft') || promptLower.includes('gentle');
+  const isSoft = promptLower.includes('soft') || promptLower.includes('gentle') || promptLower.includes('dreamy');
   const isHarsh = promptLower.includes('harsh') || promptLower.includes('strong');
   const isFilm = promptLower.includes('film') || promptLower.includes('analog');
   const isDigital = promptLower.includes('digital') || promptLower.includes('modern');
+  const isAutumn = promptLower.includes('autumn') || promptLower.includes('fall') || promptLower.includes('orange leaves');
+  const isDesert = promptLower.includes('desert') || promptLower.includes('amber') || promptLower.includes('sand');
+  const isNordic = promptLower.includes('nordic') || promptLower.includes('scandinavia');
+  const isCreamyHighlights = promptLower.includes('creamy') || promptLower.includes('cream');
+  const isWoodland = promptLower.includes('woodland') || promptLower.includes('forest');
+  const isRichTones = promptLower.includes('rich') || promptLower.includes('deep');
+  
+  // Detect specific film looks
+  const isPortra = promptLower.includes('portra') || promptLower.includes('portrait film');
+  const isFuji = promptLower.includes('fuji') || promptLower.includes('fujifilm');
+  const isKodak = promptLower.includes('kodak');
+  const isEktar = promptLower.includes('ektar');
+  const isCineStill = promptLower.includes('cinestill');
+  
+  // New matching for the example image (golden retriever/warm autumn tones)
+  const isGoldenRetrieverStyle = promptLower.includes('golden retriever') || 
+                               promptLower.includes('dog portrait') || 
+                               promptLower.includes('autumn pet') ||
+                               promptLower.includes('autumn woodland');
   
   // Return a transformation function based on the prompt
   return (rgba: RGBA): RGBA => {
@@ -145,237 +358,548 @@ export function createTransformationFromPrompt(prompt: string): (rgba: RGBA) => 
     // Convert to HSL for better transformations
     let [h, s, l] = rgbToHsl(result.r, result.g, result.b);
     
+    // For the example golden retriever image style (warm autumn tones)
+    if (isGoldenRetrieverStyle || isAutumn || isWoodland) {
+      // Warm golden brown tones with autumn-like atmosphere
+      result = adjustColorTemperature(result, 0.6); // Warm temperature
+      
+      // Apply split toning - warm amber shadows, golden highlights
+      result = applySplitTone(result, 0.08, 0.4, 0.11, 0.6);
+      
+      // Filmic tone mapping for natural look
+      result = applyFilmicToneMapping(result, 0.7);
+      
+      // Adjust vibrance for natural colors
+      s = Math.min(1, s * 1.2);
+      
+      // Slight S-curve for contrast
+      l = applySCurve(l, 0.4);
+      
+      // Additional adjustments for specific tones
+      if (h > 0.05 && h < 0.17) { // Enhance golden/amber colors
+        s = Math.min(1, s * 1.3);
+        l = Math.min(0.95, l * 1.05);
+      }
+      
+      if (h > 0.3 && h < 0.4) { // Enhance greens
+        h = h * 0.95 + 0.33 * 0.05; // Shift slightly toward forest green
+        s = Math.min(1, s * 0.9); // Slightly desaturate greens
+      }
+      
+      // Apply highlight rolloff for filmic look
+      if (l > 0.7) {
+        l = filmHighlightRolloff(l, 0.8);
+      }
+      
+      // Apply shadow enhancement
+      if (l < 0.3) {
+        l = enhanceShadows(l, 0.4);
+      }
+      
+      // Convert back to RGB
+      const [r, g, b] = hslToRgb(h, s, l);
+      result.r = Math.max(0, Math.min(1, r));
+      result.g = Math.max(0, Math.min(1, g));
+      result.b = Math.max(0, Math.min(1, b));
+      
+      return result;
+    }
+    
     // Basic transformations
     if (isWarm) {
-      // Shift hue towards orange/red
-      h = (h + 0.05) % 1;
-      s = Math.min(1, s * 1.1);
-    }
-    
-    if (isCold) {
-      // Shift hue towards blue
-      h = (h - 0.05 + 1) % 1;
-      s = Math.min(1, s * 1.1);
-    }
-    
-    if (isVintage) {
-      // Vintage film look with muted colors and warm tone
-      h = (h + 0.02) % 1;
-      s = Math.max(0, s * 0.85);
-      l = 0.9 * l + 0.1;
-    }
-    
-    if (isHighContrast) {
-      // Increase contrast with S-curve
-      l = l > 0.5 ? l + (1 - l) * 0.2 : l - l * 0.2;
-      s = Math.min(1, s * 1.2);
-    }
-    
-    if (isMoody) {
-      // Dark, moody look with blue shadows
-      l = l * 0.9;
-      s = Math.min(1, s * 1.1);
-      if (l < 0.3) {
-        h = (h * 0.7 + 0.6) % 1; // Push shadows toward blue
+      // Enhanced warm look
+      result = adjustColorTemperature(result, 0.5);
+      
+      // Add golden tint to highlights
+      if (l > 0.7) {
+        h = (h * 0.7 + 0.1 * 0.3) % 1; // Shift towards yellow-orange
       }
     }
     
-    if (isSummer) {
-      // Bright, warm look
-      h = (h * 0.8 + 0.1) % 1; // Slight shift toward yellow/orange
-      s = Math.min(1, s * 1.1);
-      l = Math.min(1, l * 1.05 + 0.05);
+    if (isCold) {
+      // Enhanced cold look
+      result = adjustColorTemperature(result, -0.5);
+      
+      // Add blue tint to shadows
+      if (l < 0.3) {
+        h = (h * 0.6 + 0.6 * 0.4) % 1; // Shift towards blue
+      }
     }
     
-    if (isGreen) {
-      // Enhance greens
+    if (isVintage || isFilm) {
+      // Enhanced vintage film look
+      result = applyFilmicToneMapping(result, 0.7);
+      
+      // Add slight cross-processing effect for vintage feel
+      result = applyCrossProcessing(result, 0.3);
+      
+      // Reduce saturation in shadows, enhance in midtones
+      if (l < 0.3) {
+        s = s * 0.8;
+      } else if (l > 0.3 && l < 0.7) {
+        s = Math.min(1, s * 1.1);
+      }
+      
+      // Add filmic highlight rolloff
+      if (l > 0.7) {
+        l = filmHighlightRolloff(l, 0.8);
+      }
+      
+      // Add slight warmth
+      result = adjustColorTemperature(result, 0.2);
+    }
+    
+    if (isHighContrast) {
+      // Enhanced contrast with advanced S-curve
+      l = applySCurve(l, 0.5);
+      
+      // Boost saturation in midtones
+      if (l > 0.3 && l < 0.7) {
+        s = Math.min(1, s * 1.2);
+      }
+    }
+    
+    if (isMoody) {
+      // Enhanced moody look
+      l = l * 0.9; // Overall darkening
+      s = Math.min(1, s * 1.1); // Slight saturation increase
+      
+      // Blue shift in shadows, warmer midtones
+      if (l < 0.3) {
+        h = (h * 0.7 + 0.6 * 0.3) % 1; // Push shadows toward blue
+        s = Math.min(1, s * 1.2);
+      } else if (l > 0.3 && l < 0.6) {
+        h = (h * 0.8 + 0.05 * 0.2) % 1; // Push midtones slightly warm
+      }
+      
+      // Apply filmic tone mapping
+      result = applyFilmicToneMapping(result, 0.7);
+    }
+    
+    if (isSummer) {
+      // Enhanced summer look
+      result = adjustColorTemperature(result, 0.3); // Slight warmth
+      
+      // Enhance blues and cyans (sky and water)
+      if (h > 0.5 && h < 0.6) {
+        s = Math.min(1, s * 1.2);
+        l = Math.min(1, l * 1.05);
+      }
+      
+      // Enhance greens (foliage)
+      if (h > 0.25 && h < 0.4) {
+        s = Math.min(1, s * 1.1);
+      }
+      
+      // Add sunny highlight glow
+      if (l > 0.8) {
+        l = Math.min(1, l * 1.1);
+        s = s * 0.9; // Desaturate very bright highlights
+      }
+    }
+    
+    if (isGreen || isWoodland) {
+      // Enhanced green processing
       if (h > 0.2 && h < 0.4) {
-        s = Math.min(1, s * 1.3);
+        // More precise adjustment for different types of greens
+        if (h > 0.3) { // Yellow-greens
+          h = h * 0.95 + 0.3 * 0.05; // Shift slightly
+          s = Math.min(1, s * 1.1); // More saturation
+        } else { // Blue-greens
+          h = h * 0.95 + 0.27 * 0.05; // Shift slightly
+          s = Math.min(1, s * 0.9); // Less saturation
+        }
+      }
+      
+      // Enhance contrast in greens
+      if (h > 0.2 && h < 0.4 && l > 0.3 && l < 0.7) {
+        l = applySCurve(l, 0.3);
       }
     }
     
     if (isPurple) {
-      // Add purple cast
-      h = (h * 0.7 + 0.8) % 1;
+      // Enhanced purple processing
+      if (h > 0.7 && h < 0.85) {
+        s = Math.min(1, s * 1.3); // Enhance saturation of purples
+      }
+      
+      // Add purple cast to shadows
+      if (l < 0.3) {
+        h = (h * 0.7 + 0.8 * 0.3) % 1;
+      }
     }
     
-    if (isYellow) {
-      // Add yellow cast
-      h = (h * 0.7 + 0.15) % 1;
+    if (isYellow || isGoldenHour) {
+      // Enhanced yellow/golden processing
+      if (h > 0.1 && h < 0.2) {
+        s = Math.min(1, s * 1.2); // Enhance saturation of yellows
+        l = Math.min(0.95, l * 1.05); // Brighten slightly
+      }
+      
+      // Golden hour glow simulation
+      result = adjustColorTemperature(result, 0.6);
+      
+      // Add golden tones to highlights
+      if (l > 0.7) {
+        h = (h * 0.7 + 0.12 * 0.3) % 1; // Shift towards gold
+      }
+      
+      // Apply filmic highlight rolloff
+      if (l > 0.75) {
+        l = filmHighlightRolloff(l, 0.7);
+      }
     }
     
-    if (isFaded) {
-      // Faded matte look
-      s = s * 0.8;
-      l = l * 0.9 + 0.1;
+    if (isFaded || isCreamyHighlights) {
+      // Enhanced faded matte look
+      s = s * 0.85; // Reduced saturation
+      
+      // Raise shadows, lower highlights
+      if (l < 0.2) {
+        l = l * 0.7 + 0.06; // Lift shadows
+      } else if (l > 0.8) {
+        l = l * 0.9 + 0.08; // Soften highlights
+      }
+      
+      // Add subtle cream tint to highlights
+      if (l > 0.7) {
+        h = (h * 0.8 + 0.1 * 0.2) % 1; // Slight shift toward cream
+        s = s * 0.8; // Desaturate highlights
+      }
     }
     
-    if (isVibrant) {
-      // Increase saturation
-      s = Math.min(1, s * 1.5);
+    if (isVibrant || isRichTones) {
+      // Enhanced vibrant look
+      s = Math.min(1, s * 1.3); // Overall saturation increase
+      
+      // Apply split-tone for rich color palette
+      result = applySplitTone(
+        result, 
+        0.6, // Shadow hue toward blue
+        0.3, // Shadow strength
+        0.1, // Highlight hue toward orange
+        0.4  // Highlight strength
+      );
+      
+      // Enhance contrast
+      l = applySCurve(l, 0.4);
     }
     
     if (isCyberpunk) {
-      // High contrast with neon glow
-      s = Math.min(1, s * 1.5);
-      l = l > 0.7 ? Math.min(1, l * 1.2) : l * 0.8;
-      h = (h + 0.5) % 1; // Complementary colors
+      // Enhanced cyberpunk look with extreme contrast and neon
+      s = Math.min(1, s * 1.6); // Extreme saturation
+      
+      // High contrast
+      l = applySCurve(l, 0.7);
+      
+      // Neon glow in shadows
+      if (l < 0.3) {
+        // Random neon color based on original hue
+        const neonHues = [0.9, 0.7, 0.3, 0.5]; // Purple, Blue, Green, Cyan
+        h = neonHues[Math.floor(h * 4)];
+        s = Math.min(1, s * 1.8);
+      }
+      
+      // Split toning
+      result = applySplitTone(
+        result,
+        0.75, // Shadow hue (purple)
+        0.7,  // Shadow strength
+        0.5,  // Highlight hue (cyan)
+        0.7   // Highlight strength
+      );
     }
     
     if (isCinematic) {
-      // Enhanced cinematic look with controlled contrast
-      l = l > 0.5 ? l * 0.9 + 0.1 : l * 0.9;
-      s = Math.min(1, s * 1.05);
+      // Enhanced cinematic look with teal shadows and orange highlights
+      result = applySplitTone(
+        result,
+        0.5,  // Shadow hue (teal)
+        0.4,  // Shadow strength
+        0.08, // Highlight hue (orange)
+        0.5   // Highlight strength
+      );
+      
+      // Filmic contrast
+      l = applySCurve(l, 0.4);
+      
+      // Apply filmic tone mapping
+      result = applyFilmicToneMapping(result, 0.8);
+      
+      // Selective desaturation
+      if (l < 0.2 || l > 0.8) {
+        s = s * 0.9; // Slightly desaturate very dark and very bright areas
+      }
     }
     
     if (isTeal && isOrange) {
-      // The popular teal & orange look from Hollywood
+      // Enhanced teal & orange Hollywood look
+      // More sophisticated implementation using luminance
       const luminance = 0.2126 * result.r + 0.7152 * result.g + 0.0722 * result.b;
       
       if (luminance < 0.5) {
-        // Shadows to teal
-        h = 0.5; // Teal
-        s = Math.min(1, s * 1.2);
+        // Push shadows to teal, with gradual transition
+        const strength = 0.7 - luminance; // Stronger effect for darker shadows
+        h = h * (1 - strength) + 0.5 * strength; // Mix with teal hue
+        s = Math.min(1, s * (1 + 0.3 * strength)); // Boost saturation
       } else {
-        // Highlights to orange
-        h = 0.08; // Orange
-        s = Math.min(1, s * 1.2);
+        // Push highlights to orange, with gradual transition
+        const strength = luminance - 0.5; // Stronger effect for brighter highlights
+        h = h * (1 - strength) + 0.08 * strength; // Mix with orange hue
+        s = Math.min(1, s * (1 + 0.3 * strength)); // Boost saturation
       }
+      
+      // Apply filmic contrast curve
+      l = applySCurve(l, 0.5);
     }
     
     if (isShadow) {
-      // Deep shadows, brighter highlights
-      l = l < 0.3 ? l * 0.7 : l > 0.7 ? Math.min(1, l * 1.1) : l;
+      // Enhanced shadow detail processing
+      if (l < 0.3) {
+        l = enhanceShadows(l, 0.5);
+      }
+      
+      // Deep rich shadows with blue tint
+      if (l < 0.2) {
+        h = (h * 0.8 + 0.6 * 0.2) % 1; // Shift toward blue
+        s = Math.min(1, s * 0.9); // Slightly reduce saturation in very dark areas
+      }
+      
+      // Brighter highlights
+      if (l > 0.7) {
+        l = Math.min(1, l * 1.1);
+      }
     }
     
-    if (isPastel) {
-      // Soft pastel tones
-      s = Math.max(0.3, s * 0.7);
-      l = Math.min(0.9, l * 0.8 + 0.2);
+    if (isPastel || isSoft) {
+      // Enhanced pastel/soft look
+      s = s * 0.65; // Reduce saturation
+      
+      // Raise shadows, lower highlights for less contrast
+      if (l < 0.3) {
+        l = l * 0.7 + 0.09;
+      } else if (l > 0.7) {
+        l = l * 0.9 + 0.07;
+      }
+      
+      // Add subtle color shifts
+      h = (h * 0.9 + 0.05) % 1; // Slight shift toward warmer tones
     }
     
     if (isBW) {
-      // Convert to black and white
-      s = 0;
+      // Advanced black and white processing
+      // Use a more sophisticated B&W conversion based on color channels
+      const r = result.r;
+      const g = result.g;
+      const b = result.b;
       
+      // Channel mixer approach (similar to how photographers adjust B&W conversion)
+      let bwValue = r * 0.3 + g * 0.59 + b * 0.11; // Standard luminance
+      
+      if (promptLower.includes('red filter')) {
+        bwValue = r * 0.6 + g * 0.3 + b * 0.1; // Red filter effect
+      } else if (promptLower.includes('green filter')) {
+        bwValue = r * 0.2 + g * 0.7 + b * 0.1; // Green filter effect
+      } else if (promptLower.includes('blue filter')) {
+        bwValue = r * 0.1 + g * 0.3 + b * 0.6; // Blue filter effect
+      } else if (promptLower.includes('orange filter')) {
+        bwValue = r * 0.5 + g * 0.4 + b * 0.1; // Orange filter effect
+      } else if (promptLower.includes('yellow filter')) {
+        bwValue = r * 0.4 + g * 0.5 + b * 0.1; // Yellow filter effect
+      }
+      
+      // Apply contrast
       if (isHighContrast) {
-        // High contrast B&W
-        l = l > 0.5 ? Math.min(1, l * 1.2) : Math.max(0, l * 0.8);
+        bwValue = applySCurve(bwValue, 0.6);
+      }
+      
+      // Set all RGB channels to this value
+      s = 0;
+      l = bwValue;
+    }
+    
+    // Specific film emulations
+    if (isPortra) {
+      // Portra film emulation (soft, warm, good for portraits)
+      result = adjustColorTemperature(result, 0.3);
+      s = s * 0.9; // Slightly reduced saturation
+      
+      // Portra's characteristic handling of skin tones
+      if (h > 0.05 && h < 0.15) { // Typical skin tone hue range
+        h = (h * 0.9 + 0.1 * 0.1) % 1; // Slight shift toward orange
+        s = s * 0.9; // Gentle saturation in skin tones
+      }
+      
+      // Highlight rolloff
+      if (l > 0.7) {
+        l = filmHighlightRolloff(l, 0.7);
+      }
+      
+      // Shadow lift
+      if (l < 0.3) {
+        l = enhanceShadows(l, 0.4);
+      }
+    } 
+    
+    if (isFuji) {
+      // Fuji film emulation (vibrant greens, cooler tones)
+      result = adjustColorTemperature(result, -0.1); // Slightly cooler
+      
+      // Fuji's green handling
+      if (h > 0.25 && h < 0.4) { // Green range
+        s = Math.min(1, s * 1.2); // More saturated greens
+        h = (h * 0.95 + 0.33 * 0.05) % 1; // Slight shift
+      }
+      
+      // Fuji's red/magenta handling
+      if (h > 0.95 || h < 0.05) { // Red range
+        s = Math.min(1, s * 1.1); // More saturated reds
+        h = (h + 0.01) % 1; // Slight shift toward magenta
+      }
+      
+      // Gentle highlight contrast
+      if (l > 0.7) {
+        l = filmHighlightRolloff(l, 0.6);
       }
     }
     
-    // New transformations
-    if (isCoffee) {
-      // Coffee tone - warm browns with slightly reduced saturation
-      h = 0.08; // Brown-orange hue
-      s = Math.min(1, s * 0.9);
-      l = l * 0.95;
+    if (isCineStill) {
+      // CineStill film emulation (cinematic look with halation)
+      result = adjustColorTemperature(result, 0.3); // Warm
       
-      // Subtle shift based on luminance for dimension
+      // Red halation effect on highlights
+      if (l > 0.8) {
+        h = (h * 0.6 + 0.98 * 0.4) % 1; // Shift bright highlights toward red
+        s = Math.min(1, s * 1.3); // Saturate those highlights
+      }
+      
+      // Filmic contrast
+      l = applySCurve(l, 0.4);
+    }
+    
+    if (isEktar) {
+      // Ektar film emulation (vibrant, high contrast)
+      s = Math.min(1, s * 1.3); // High saturation
+      
+      // Strong contrast
+      l = applySCurve(l, 0.5);
+      
+      // Ektar's red handling
+      if (h > 0.95 || h < 0.05) { // Red range
+        s = Math.min(1, s * 1.2); // More saturated reds
+        h = (h + 0.01) % 1; // Slight shift
+      }
+    }
+    
+    if (isCoffee) {
+      // Enhanced coffee tone look - rich browns with dimensionality
+      const baseBrownHue = 0.08; // Base brown/coffee hue
+      
+      // Different treatment based on luminance for dimension
       if (l > 0.7) {
-        h = 0.07; // Slightly more golden for highlights
+        // Highlights: lighter, slightly golden
+        h = (h * 0.2 + baseBrownHue * 0.8) % 1;
+        h = (h - 0.02 + 1) % 1; // Slightly more golden
         s = Math.min(0.8, s * 0.8);
       } else if (l < 0.3) {
-        h = 0.09; // Deeper brown for shadows
-        s = Math.min(0.7, s * 0.7);
+        // Shadows: darker, slightly more red-brown
+        h = (h * 0.2 + baseBrownHue * 0.8) % 1;
+        h = (h + 0.02) % 1; // Slightly more red
+        s = Math.min(0.85, s * 0.85);
+      } else {
+        // Midtones: perfect coffee brown
+        h = (h * 0.1 + baseBrownHue * 0.9) % 1;
+        s = Math.min(0.9, s * 0.9);
       }
+      
+      // Apply filmic contrast
+      l = applySCurve(l, 0.3);
     }
     
     if (isSepia) {
-      // Classic sepia tone
+      // Enhanced sepia tone with vintage feel
       h = 0.07; // Sepia hue
-      s = Math.min(0.8, s * 0.8);
-      l = Math.min(0.9, l * 0.9 + 0.1);
-    }
-    
-    if (isRedTint) {
-      // Red/Crimson tint
-      h = (h * 0.5 + 0.98) % 1;
-      s = Math.min(1, s * 1.2);
-    }
-    
-    if (isBlueHour) {
-      // Blue hour twilight look
-      h = (h * 0.5 + 0.6) % 1; // Shift toward blue
-      s = Math.min(1, s * 0.9);
-      l = l * 0.9;
+      s = Math.min(0.7, s * 0.7);
       
-      // Shadows deeper blue
-      if (l < 0.4) {
-        h = (h * 0.8 + 0.65) % 1;
-        s = Math.min(1, s * 1.2);
-      }
-    }
-    
-    if (isGoldenHour) {
-      // Golden hour sunset look
-      h = (h * 0.7 + 0.07) % 1; // Shift toward gold
-      s = Math.min(1, s * 1.1);
-      
-      // Different treatment based on luminance
+      // Subtle vignette effect with adjustment by luminance
       if (l > 0.7) {
-        // Highlights more yellow
-        h = (h * 0.9 + 0.1) % 1;
-        s = Math.min(1, s * 0.9);
+        l = l * 0.95 + 0.05; // Soften highlights
       } else if (l < 0.3) {
-        // Shadows more orange-red
-        h = (h * 0.9 + 0.05) % 1;
-        s = Math.min(1, s * 1.2);
+        l = l * 0.9; // Deepen shadows slightly
       }
     }
     
-    if (isNight) {
-      // Night look - deep blues and shadows
-      l = l * 0.8; // Darken overall
-      
-      if (l < 0.5) {
-        h = (h * 0.5 + 0.6) % 1; // Blue shift for darker areas
-        s = Math.min(1, s * 0.8);
-      }
-    }
-    
-    if (isSoft) {
-      // Soft look - reduced contrast and slightly lifted blacks
-      l = l < 0.1 ? l * 2 + 0.1 : l > 0.9 ? l * 0.9 + 0.1 : l;
-      s = s * 0.9;
-    }
-    
-    if (isHarsh) {
-      // Harsh look - increased contrast and saturation
-      l = l > 0.5 ? Math.min(1, l * 1.2) : Math.max(0, l * 0.8);
-      s = Math.min(1, s * 1.3);
-    }
-    
-    if (isFilm) {
-      // Film look - subtle highlight rolloff, grain simulation, slight color shifts
-      if (l > 0.8) {
-        l = 0.8 + (l - 0.8) * 0.7; // Softer highlights
+    if (isAutumn) {
+      // Enhanced autumn look with golden-orange and rusty tones
+      // More warm reds, oranges and yellows
+      if (h > 0.95 || h < 0.2) { // Red to yellow range
+        h = (h * 0.6 + 0.08 * 0.4) % 1; // Shift toward orange-amber
+        s = Math.min(1, s * 1.2); // Boost saturation
       }
       
-      // Slight color shift based on tone
-      if (l > 0.6) {
-        h = (h * 0.95 + 0.08 * 0.05) % 1; // Slight warmth in highlights
-      } else if (l < 0.3) {
-        h = (h * 0.95 + 0.6 * 0.05) % 1; // Slight coolness in shadows
+      // Greens become more yellow/gold
+      if (h > 0.2 && h < 0.4) { // Green range
+        h = (h * 0.7 + 0.13 * 0.3) % 1; // Shift toward yellow-green/gold
+        s = Math.min(1, s * 0.9); // Slightly reduced saturation
       }
       
-      // Slight s-curve for mid tones
-      if (l > 0.3 && l < 0.7) {
-        l = l > 0.5 ? l + (l - 0.5) * 0.1 : l - (0.5 - l) * 0.1;
+      // Overall warm cast
+      result = adjustColorTemperature(result, 0.4);
+      
+      // Apply filmic tone mapping
+      result = applyFilmicToneMapping(result, 0.6);
+    }
+    
+    if (isDesert) {
+      // Enhanced desert amber look
+      result = adjustColorTemperature(result, 0.5); // Warm cast
+      
+      // Amber tone adjustment
+      if (h > 0.05 && h < 0.2) { // Yellow/orange range
+        h = (h * 0.7 + 0.09 * 0.3) % 1; // Shift toward amber
+        s = Math.min(1, s * 1.1); // Boost saturation slightly
       }
+      
+      // Desert blue skies
+      if (h > 0.5 && h < 0.65) { // Blue range
+        s = Math.min(1, s * 1.2); // More saturated blues
+        h = (h * 0.95 + 0.6 * 0.05) % 1; // Slight shift
+      }
+      
+      // Enhance contrast for harsh desert light
+      l = applySCurve(l, 0.4);
     }
     
-    if (isDigital) {
-      // Digital look - clean, sharp, vibrant
-      s = Math.min(1, s * 1.2);
-      l = l > 0.5 ? Math.min(1, l * 1.1) : Math.max(0, l * 0.9);
+    if (isNordic) {
+      // Nordic cool blue look
+      result = adjustColorTemperature(result, -0.4); // Cool cast
+      
+      // Split tone with blue shadows and desaturated highlights
+      result = applySplitTone(
+        result,
+        0.6, // Shadow hue (blue)
+        0.5, // Shadow strength
+        0.08, // Highlight hue (slight warmth)
+        0.2  // Highlight strength (subtle)
+      );
+      
+      // Reduced saturation overall
+      s = s * 0.85;
+      
+      // Enhanced contrast
+      l = applySCurve(l, 0.4);
     }
     
-    // Convert back to RGB
+    // Convert back to RGB from HSL if we made HSL adjustments
     const [r, g, b] = hslToRgb(h, s, l);
     result.r = Math.max(0, Math.min(1, r));
     result.g = Math.max(0, Math.min(1, g));
     result.b = Math.max(0, Math.min(1, b));
+    
+    // Apply any final transformations
+    if (isFilm || isVintage || isCinematic) {
+      result = applyFilmicToneMapping(result, 0.7);
+    }
     
     return result;
   };
