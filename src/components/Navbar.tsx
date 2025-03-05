@@ -14,13 +14,12 @@ export const Navbar: React.FC = () => {
   return (
     <nav className="sticky top-0 z-50 w-full bg-background/80 backdrop-blur-md border-b border-border">
       <div className="container flex h-16 items-center justify-between">
-        <div className="flex items-center gap-2">
+        <div className="flex items-center">
           <img
             src="https://i.imgur.com/JgWvscq.png"
             alt="Vision Grade Logo"
-            className="h-8 w-auto"
+            className="h-10 w-auto"
           />
-          <span className="text-xl font-bold tracking-tight">LUTs Generator</span>
         </div>
         
         {/* Mobile menu button */}

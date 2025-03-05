@@ -127,6 +127,16 @@ export function createTransformationFromPrompt(prompt: string): (rgba: RGBA) => 
   const isVibrant = promptLower.includes('vibrant') || promptLower.includes('saturated');
   const isCyberpunk = promptLower.includes('cyberpunk') || promptLower.includes('neon');
   const isShadow = promptLower.includes('shadow') || promptLower.includes('noir');
+  const isCoffee = promptLower.includes('coffee');
+  const isSepia = promptLower.includes('sepia');
+  const isRedTint = promptLower.includes('red') || promptLower.includes('crimson');
+  const isBlueHour = promptLower.includes('blue hour') || promptLower.includes('twilight');
+  const isGoldenHour = promptLower.includes('golden hour') || promptLower.includes('sunset');
+  const isNight = promptLower.includes('night') || promptLower.includes('dark');
+  const isSoft = promptLower.includes('soft') || promptLower.includes('gentle');
+  const isHarsh = promptLower.includes('harsh') || promptLower.includes('strong');
+  const isFilm = promptLower.includes('film') || promptLower.includes('analog');
+  const isDigital = promptLower.includes('digital') || promptLower.includes('modern');
   
   // Return a transformation function based on the prompt
   return (rgba: RGBA): RGBA => {
@@ -252,6 +262,113 @@ export function createTransformationFromPrompt(prompt: string): (rgba: RGBA) => 
         // High contrast B&W
         l = l > 0.5 ? Math.min(1, l * 1.2) : Math.max(0, l * 0.8);
       }
+    }
+    
+    // New transformations
+    if (isCoffee) {
+      // Coffee tone - warm browns with slightly reduced saturation
+      h = 0.08; // Brown-orange hue
+      s = Math.min(1, s * 0.9);
+      l = l * 0.95;
+      
+      // Subtle shift based on luminance for dimension
+      if (l > 0.7) {
+        h = 0.07; // Slightly more golden for highlights
+        s = Math.min(0.8, s * 0.8);
+      } else if (l < 0.3) {
+        h = 0.09; // Deeper brown for shadows
+        s = Math.min(0.7, s * 0.7);
+      }
+    }
+    
+    if (isSepia) {
+      // Classic sepia tone
+      h = 0.07; // Sepia hue
+      s = Math.min(0.8, s * 0.8);
+      l = Math.min(0.9, l * 0.9 + 0.1);
+    }
+    
+    if (isRedTint) {
+      // Red/Crimson tint
+      h = (h * 0.5 + 0.98) % 1;
+      s = Math.min(1, s * 1.2);
+    }
+    
+    if (isBlueHour) {
+      // Blue hour twilight look
+      h = (h * 0.5 + 0.6) % 1; // Shift toward blue
+      s = Math.min(1, s * 0.9);
+      l = l * 0.9;
+      
+      // Shadows deeper blue
+      if (l < 0.4) {
+        h = (h * 0.8 + 0.65) % 1;
+        s = Math.min(1, s * 1.2);
+      }
+    }
+    
+    if (isGoldenHour) {
+      // Golden hour sunset look
+      h = (h * 0.7 + 0.07) % 1; // Shift toward gold
+      s = Math.min(1, s * 1.1);
+      
+      // Different treatment based on luminance
+      if (l > 0.7) {
+        // Highlights more yellow
+        h = (h * 0.9 + 0.1) % 1;
+        s = Math.min(1, s * 0.9);
+      } else if (l < 0.3) {
+        // Shadows more orange-red
+        h = (h * 0.9 + 0.05) % 1;
+        s = Math.min(1, s * 1.2);
+      }
+    }
+    
+    if (isNight) {
+      // Night look - deep blues and shadows
+      l = l * 0.8; // Darken overall
+      
+      if (l < 0.5) {
+        h = (h * 0.5 + 0.6) % 1; // Blue shift for darker areas
+        s = Math.min(1, s * 0.8);
+      }
+    }
+    
+    if (isSoft) {
+      // Soft look - reduced contrast and slightly lifted blacks
+      l = l < 0.1 ? l * 2 + 0.1 : l > 0.9 ? l * 0.9 + 0.1 : l;
+      s = s * 0.9;
+    }
+    
+    if (isHarsh) {
+      // Harsh look - increased contrast and saturation
+      l = l > 0.5 ? Math.min(1, l * 1.2) : Math.max(0, l * 0.8);
+      s = Math.min(1, s * 1.3);
+    }
+    
+    if (isFilm) {
+      // Film look - subtle highlight rolloff, grain simulation, slight color shifts
+      if (l > 0.8) {
+        l = 0.8 + (l - 0.8) * 0.7; // Softer highlights
+      }
+      
+      // Slight color shift based on tone
+      if (l > 0.6) {
+        h = (h * 0.95 + 0.08 * 0.05) % 1; // Slight warmth in highlights
+      } else if (l < 0.3) {
+        h = (h * 0.95 + 0.6 * 0.05) % 1; // Slight coolness in shadows
+      }
+      
+      // Slight s-curve for mid tones
+      if (l > 0.3 && l < 0.7) {
+        l = l > 0.5 ? l + (l - 0.5) * 0.1 : l - (0.5 - l) * 0.1;
+      }
+    }
+    
+    if (isDigital) {
+      // Digital look - clean, sharp, vibrant
+      s = Math.min(1, s * 1.2);
+      l = l > 0.5 ? Math.min(1, l * 1.1) : Math.max(0, l * 0.9);
     }
     
     // Convert back to RGB

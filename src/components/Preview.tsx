@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Button } from "./Button";
 import { cn } from "@/lib/utils";
@@ -26,10 +25,19 @@ export const Preview: React.FC<PreviewProps> = ({
   const [compareMode, setCompareMode] = useState<'side-by-side' | 'slider'>('side-by-side');
   const [sliderPosition, setSliderPosition] = useState(50);
 
-  // Reset loaded state when images change
+  // Reset loaded state when processed image changes, but keep original image state
   useEffect(() => {
-    setImagesLoaded({ original: false, processed: false });
-  }, [originalImage, processedImage]);
+    if (processedImage) {
+      setImagesLoaded(prev => ({ ...prev, processed: false }));
+    }
+  }, [processedImage]);
+  
+  // Only reset original image loaded state when original image changes
+  useEffect(() => {
+    if (originalImage) {
+      setImagesLoaded(prev => ({ ...prev, original: false }));
+    }
+  }, [originalImage]);
 
   const originalFileName = fileName.split(".")[0] || "image";
 

@@ -18,15 +18,26 @@ export const Prompt: React.FC<PromptProps> = ({ onSubmit, isLoading, disabled = 
     }
   };
 
-  const placeholderExamples = [
-    "Cinematic orange and teal contrast",
+  const predefinedPrompts = [
+    "Coffee tone",
+    "Cinematic orange and teal",
     "Warm vintage film look",
     "Cold blue night aesthetic",
     "High contrast black and white",
-    "Soft pastel tones"
+    "Soft pastel tones",
+    "Moody dark shadows",
+    "Summer vibrant colors",
+    "Cyberpunk neon glow"
   ];
   
-  const randomPlaceholder = placeholderExamples[Math.floor(Math.random() * placeholderExamples.length)];
+  const randomPlaceholder = predefinedPrompts[Math.floor(Math.random() * predefinedPrompts.length)];
+
+  const handlePredefinedPrompt = (selectedPrompt: string) => {
+    setPrompt(selectedPrompt);
+    if (!isLoading && !disabled) {
+      onSubmit(selectedPrompt);
+    }
+  };
 
   return (
     <form onSubmit={handleSubmit} className="w-full animate-slide-up">
@@ -48,9 +59,24 @@ export const Prompt: React.FC<PromptProps> = ({ onSubmit, isLoading, disabled = 
             Generate
           </Button>
         </div>
-        <p className="text-xs text-muted-foreground mt-2 ml-1">
+        <p className="text-xs text-muted-foreground mt-2 ml-1 mb-3">
           Tip: Be specific about colors, mood, and style for best results
         </p>
+        
+        {/* Predefined prompt suggestions */}
+        <div className="flex flex-wrap gap-2 mt-2">
+          {predefinedPrompts.map((predefinedPrompt, index) => (
+            <button
+              key={index}
+              type="button"
+              onClick={() => handlePredefinedPrompt(predefinedPrompt)}
+              disabled={isLoading || disabled}
+              className="text-xs px-3 py-1.5 rounded-full bg-secondary hover:bg-secondary/80 text-secondary-foreground transition-colors"
+            >
+              {predefinedPrompt}
+            </button>
+          ))}
+        </div>
       </div>
     </form>
   );

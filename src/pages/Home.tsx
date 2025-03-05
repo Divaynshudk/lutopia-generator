@@ -240,8 +240,8 @@ const Home: React.FC = () => {
         </div>
       </section>
 
-      {/* FAQ Section */}
-      <section className="py-16 bg-secondary/20">
+      {/* FAQ Section - adjusted spacing */}
+      <section className="py-16 mt-2 bg-secondary/20">
         <div className="container px-4 md:px-6">
           <div className="text-center mb-12 animate-fade-in">
             <h2 className="text-3xl font-bold tracking-tight mb-4">Frequently Asked Questions</h2>
