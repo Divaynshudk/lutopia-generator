@@ -1,34 +1,39 @@
 
-import React from "react";
+import React, { useState } from "react";
 import { NavLink } from "react-router-dom";
 import { cn } from "@/lib/utils";
+import { Menu, X } from "lucide-react";
 
 export const Navbar: React.FC = () => {
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+
+  const toggleMenu = () => {
+    setIsMenuOpen(!isMenuOpen);
+  };
+
   return (
     <nav className="sticky top-0 z-50 w-full bg-background/80 backdrop-blur-md border-b border-border">
       <div className="container flex h-16 items-center justify-between">
         <div className="flex items-center gap-2">
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            className="h-6 w-6 text-primary"
-          >
-            <path d="M12 2v8"></path>
-            <path d="m4.93 10.93 1.41 1.41"></path>
-            <path d="M2 18h2"></path>
-            <path d="M20 18h2"></path>
-            <path d="m19.07 10.93-1.41 1.41"></path>
-            <path d="M22 22H2"></path>
-            <path d="m8 22 4-10 4 10"></path>
-          </svg>
+          <img
+            src="https://i.imgur.com/JgWvscq.png"
+            alt="Vision Grade Logo"
+            className="h-8 w-auto"
+          />
           <span className="text-xl font-bold tracking-tight">LUTs Generator</span>
         </div>
-        <div className="flex gap-6">
+        
+        {/* Mobile menu button */}
+        <button 
+          className="md:hidden flex items-center p-2 text-gray-500 hover:text-primary"
+          onClick={toggleMenu}
+          aria-label="Toggle menu"
+        >
+          {isMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+        </button>
+
+        {/* Desktop navigation */}
+        <div className="hidden md:flex gap-6">
           <NavLink 
             to="/" 
             className={({ isActive }) => 
@@ -67,6 +72,53 @@ export const Navbar: React.FC = () => {
           </NavLink>
         </div>
       </div>
+
+      {/* Mobile navigation menu */}
+      {isMenuOpen && (
+        <div className="md:hidden container py-4 bg-background animate-fade-in">
+          <div className="flex flex-col space-y-4">
+            <NavLink 
+              to="/" 
+              className={({ isActive }) => 
+                cn("text-sm font-medium transition-colors hover:text-accent py-2 px-4 rounded-md",
+                  isActive 
+                    ? "bg-secondary text-foreground"
+                    : "text-muted-foreground"
+                )
+              }
+              onClick={() => setIsMenuOpen(false)}
+            >
+              Home
+            </NavLink>
+            <NavLink 
+              to="/generator" 
+              className={({ isActive }) => 
+                cn("text-sm font-medium transition-colors hover:text-accent py-2 px-4 rounded-md",
+                  isActive 
+                    ? "bg-secondary text-foreground"
+                    : "text-muted-foreground"
+                )
+              }
+              onClick={() => setIsMenuOpen(false)}
+            >
+              Generator
+            </NavLink>
+            <NavLink 
+              to="/trending" 
+              className={({ isActive }) => 
+                cn("text-sm font-medium transition-colors hover:text-accent py-2 px-4 rounded-md",
+                  isActive 
+                    ? "bg-secondary text-foreground"
+                    : "text-muted-foreground"
+                )
+              }
+              onClick={() => setIsMenuOpen(false)}
+            >
+              Trending LUTs
+            </NavLink>
+          </div>
+        </div>
+      )}
     </nav>
   );
 };
