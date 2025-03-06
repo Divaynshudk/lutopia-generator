@@ -1,6 +1,7 @@
 
 import React, { useState } from "react";
 import { Button } from "./Button";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface PromptProps {
   onSubmit: (prompt: string) => void;
@@ -10,6 +11,7 @@ interface PromptProps {
 
 export const Prompt: React.FC<PromptProps> = ({ onSubmit, isLoading, disabled = false }) => {
   const [prompt, setPrompt] = useState("");
+  const { user } = useAuth();
   
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -47,9 +49,16 @@ export const Prompt: React.FC<PromptProps> = ({ onSubmit, isLoading, disabled = 
   return (
     <form onSubmit={handleSubmit} className="w-full animate-slide-up">
       <div className="glass rounded-xl p-4 shadow-subtle">
-        <label htmlFor="prompt" className="block text-sm font-medium mb-2 ml-1">
-          Describe your desired LUT effect
-        </label>
+        <div className="flex items-center gap-2 mb-2">
+          <label htmlFor="prompt" className="block text-sm font-medium ml-1">
+            Describe your desired LUT effect
+          </label>
+          {!user && (
+            <span className="text-xs inline-flex items-center px-2 py-1 rounded-full bg-primary/10 text-primary">
+              Sign in to save prompts
+            </span>
+          )}
+        </div>
         <div className="flex gap-2">
           <input
             id="prompt"

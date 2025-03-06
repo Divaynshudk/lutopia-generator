@@ -1,9 +1,9 @@
-
 import React, { useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { ArrowRight, ExternalLink } from "lucide-react";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { NewsletterSignup } from "@/components/NewsletterSignup";
 
 const Home: React.FC = () => {
   const heroVideoRef = useRef<HTMLVideoElement>(null);
@@ -239,6 +239,9 @@ const Home: React.FC = () => {
           </div>
         </div>
       </section>
+
+      {/* Newsletter Section - added before FAQ */}
+      <NewsletterSignup />
 
       {/* FAQ Section - adjusted spacing */}
       <section className="py-16 mt-2 bg-secondary/20">
