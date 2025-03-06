@@ -273,14 +273,14 @@ function applySplitTone(
  */
 function applyFilmicToneMapping(rgba: RGBA, strength: number = 0.8): RGBA {
   const a = 0.15;
-  const b = 0.50;
+  const b_param = 0.50; // Renamed from 'b' to 'b_param' to avoid conflict
   const c = 0.10;
   const d = 0.20;
   const e = 0.02;
   const f = 0.30;
   
   const applyACES = (x: number): number => {
-    return (x * (a * x + c * b) + d * e) / (x * (a * x + b) + d * f) - e / f;
+    return (x * (a * x + c * b_param) + d * e) / (x * (a * x + b_param) + d * f) - e / f;
   };
   
   // Mix between original and ACES-mapped value based on strength
