@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
@@ -92,6 +93,7 @@ export const Prompt: React.FC<PromptProps> = ({ onSubmit, isLoading, disabled = 
 
   const handlePredefinedPrompt = (selectedPrompt: string) => {
     setPrompt(selectedPrompt);
+    // Fix: Only submit if not already loading and not disabled
     if (!isLoading && !disabled) {
       onSubmit(selectedPrompt);
     }
@@ -191,7 +193,7 @@ export const Prompt: React.FC<PromptProps> = ({ onSubmit, isLoading, disabled = 
                     type="button"
                     onClick={() => handlePredefinedPrompt(predefinedPrompt)}
                     disabled={isLoading || disabled}
-                    className="text-xs px-3 py-1.5 rounded-full bg-secondary hover:bg-secondary/80 text-secondary-foreground transition-colors"
+                    className="text-xs px-3 py-1.5 rounded-full bg-secondary hover:bg-secondary/80 text-secondary-foreground transition-colors disabled:opacity-50 disabled:pointer-events-none"
                   >
                     {predefinedPrompt}
                   </button>
