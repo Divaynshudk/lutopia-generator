@@ -1,4 +1,5 @@
-import { RGBA, generateCubeLUT, createTransformationFromPrompt } from "./lutGenerator";
+
+import { RGBA, generateCubeLUT, createTransformationFromPrompt, analyzePrompt } from "./lutGenerator";
 
 /**
  * Apply a LUT transformation to an image
