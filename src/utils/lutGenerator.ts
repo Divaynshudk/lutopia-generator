@@ -1,4 +1,4 @@
-
+<lov-code>
 // Enhanced LUT generator with more sophisticated algorithms
 
 export interface RGBA {
@@ -652,7 +652,7 @@ export function createTransformationFromPrompt(prompt: string): (rgba: RGBA) => 
       // Apply filmic contrast curve
       l = applySCurve(l, 0.5);
     }
-    
+
     if (isShadow) {
       // Enhanced shadow detail processing
       if (l < 0.3) {
@@ -666,19 +666,4 @@ export function createTransformationFromPrompt(prompt: string): (rgba: RGBA) => 
       }
       
       // Brighter highlights
-      if (l > 0.7) {
-        l = Math.min(1, l * 1.1); // Boost highlights slightly
-        s = Math.min(1, s * 0.95); // Slightly reduce saturation in highlights
-      }
-    }
-    
-    // Convert back to RGB for the final result
-    const [r, g, b] = hslToRgb(h, s, l);
-    return {
-      r: Math.max(0, Math.min(1, r)),
-      g: Math.max(0, Math.min(1, g)),
-      b: Math.max(0, Math.min(1, b)),
-      a: rgba.a
-    };
-  };
-}
+      if (l > 0.
