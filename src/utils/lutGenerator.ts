@@ -1,4 +1,3 @@
-
 /**
  * Enhanced LUT generator with more sophisticated algorithms
  */
@@ -444,4 +443,5 @@ export function createTransformationFromPrompt(prompt: string): (rgba: RGBA) => 
 }
 
 // Re-export necessary types and functions for backward compatibility
-export { RGBA, analyzePrompt };
+export { analyzePrompt };
+export type { RGBA };

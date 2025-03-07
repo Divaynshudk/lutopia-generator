@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
@@ -10,7 +9,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Info } from "lucide-react";
+import { Info, Loader2 } from "lucide-react";
 
 interface PromptProps {
   onSubmit: (prompt: string) => void;
@@ -116,7 +115,7 @@ export const Prompt: React.FC<PromptProps> = ({ onSubmit, isLoading, disabled = 
     
     return () => clearInterval(interval);
   }, []);
-
+  
   return (
     <form onSubmit={handleSubmit} className="w-full animate-slide-up">
       <div className="glass rounded-xl p-4 shadow-subtle">
@@ -160,7 +159,11 @@ export const Prompt: React.FC<PromptProps> = ({ onSubmit, isLoading, disabled = 
               disabled={isLoading || disabled}
               className="flex-1 px-4 py-2 rounded-lg bg-background border border-input focus:border-accent focus:ring-1 focus:ring-accent/40 outline-none"
             />
-            <Button type="submit" isLoading={isLoading} disabled={!prompt.trim() || disabled}>
+            <Button 
+              type="submit" 
+              disabled={!prompt.trim() || isLoading || disabled}
+            >
+              {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Generate
             </Button>
           </div>

@@ -1,4 +1,3 @@
-
 import { RGBA, generateCubeLUT, createTransformationFromPrompt, analyzePrompt } from "./lutGenerator";
 
 /**
@@ -208,9 +207,9 @@ function parseLutSize(cubeData: string): number {
 /**
  * Parse the LUT data from the CUBE file data
  */
-function parseLutData(cubeData: string, lutSize: number): number[][][] {
+function parseLutData(cubeData: string, lutSize: number): number[][][][] {
   // Initialize a 3D array for the LUT data
-  const lutData: number[][][] = new Array(lutSize);
+  const lutData: number[][][][] = new Array(lutSize);
   for (let i = 0; i < lutSize; i++) {
     lutData[i] = new Array(lutSize);
     for (let j = 0; j < lutSize; j++) {
@@ -248,7 +247,7 @@ function parseLutData(cubeData: string, lutSize: number): number[][][] {
 /**
  * Apply a LUT to a single color value using trilinear interpolation
  */
-function applyLut(r: number, g: number, b: number, lutData: number[][][], lutSize: number): RGBA {
+function applyLut(r: number, g: number, b: number, lutData: number[][][][], lutSize: number): RGBA {
   // Scale the input values to the LUT indices
   const rScaled = r * (lutSize - 1);
   const gScaled = g * (lutSize - 1);
