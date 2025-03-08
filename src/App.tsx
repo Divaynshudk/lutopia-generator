@@ -13,6 +13,8 @@ import Generator from "./pages/Generator";
 import TrendingLUTs from "./pages/TrendingLUTs";
 import NotFound from "./pages/NotFound";
 import Auth from "./pages/Auth";
+import Blog from "./pages/Blog";
+import BlogPostLayout from "./components/BlogPostLayout";
 
 const queryClient = new QueryClient();
 
@@ -31,6 +33,8 @@ const App = () => (
                 <Route path="/generator" element={<Generator />} />
                 <Route path="/trending" element={<TrendingLUTs />} />
                 <Route path="/auth" element={<Auth />} />
+                <Route path="/blog" element={<Blog />} />
+                <Route path="/blog/:slug" element={<BlogPostLayout />} />
                 <Route path="*" element={<NotFound />} />
               </Routes>
             </main>
