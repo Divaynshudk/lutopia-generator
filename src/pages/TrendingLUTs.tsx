@@ -118,9 +118,9 @@ const TrendingLUTs: React.FC = () => {
     try {
       setIsSubmitting(true);
       
-      // Changed to insert into lut_pack_subscribers table instead of newsletter_subscribers
+      // Updated to use the new "Lut pack chahiye" table
       const { error } = await supabase
-        .from('lut_pack_subscribers')
+        .from('lut_pack_chahiye')
         .insert({ email, name });
       
       if (error) {
