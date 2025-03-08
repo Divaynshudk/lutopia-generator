@@ -148,7 +148,7 @@ const TrendingLUTs: React.FC = () => {
         <header className="text-center mb-8 animate-fade-in">
           <h1 className="text-4xl font-bold tracking-tight mb-2">Trending LUTs</h1>
           <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-            Make your visuals great with LUTs
+            Make your visuals great with LUTs from Vision Grade - the AI-powered color grading tool
           </p>
         </header>
         
