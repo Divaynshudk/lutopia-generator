@@ -118,13 +118,14 @@ const TrendingLUTs: React.FC = () => {
     try {
       setIsSubmitting(true);
       
+      // Changed to insert into lut_pack_subscribers table instead of newsletter_subscribers
       const { error } = await supabase
-        .from('newsletter_subscribers')
+        .from('lut_pack_subscribers')
         .insert({ email, name });
       
       if (error) {
         if (error.code === '23505') {
-          toast.info("You're already subscribed to our newsletter!");
+          toast.info("You're already subscribed to our LUTs pack!");
         } else {
           throw error;
         }
@@ -134,7 +135,7 @@ const TrendingLUTs: React.FC = () => {
         setName("");
       }
     } catch (error: any) {
-      console.error("Error subscribing to newsletter:", error);
+      console.error("Error subscribing to LUTs pack:", error);
       toast.error(error.message || "Failed to subscribe. Please try again.");
     } finally {
       setIsSubmitting(false);
