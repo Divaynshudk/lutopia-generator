@@ -10,7 +10,6 @@ const BlogPostLayout: React.FC = () => {
   const { slug } = useParams<{ slug: string }>();
   
   // Find the current post from our blog data
-  // This is using the blog data from the Blog.tsx component
   const currentPost = blogPosts.find(post => post.slug === slug);
   
   // Get 3 related posts, excluding the current one
@@ -78,8 +77,8 @@ const BlogPostLayout: React.FC = () => {
                   <CardTitle className="text-lg line-clamp-2">{post.title}</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <Button asChild variant="ghost" className="group p-0">
-                    <Link to={`/blog/${post.slug}`}>
+                  <Button asChild variant="ghost" className="p-0 h-auto text-primary hover:text-primary/80 hover:bg-transparent group">
+                    <Link to={`/blog/${post.slug}`} className="flex items-center">
                       Read Article
                       <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />
                     </Link>
