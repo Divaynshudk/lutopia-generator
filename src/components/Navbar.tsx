@@ -71,6 +71,18 @@ export const Navbar: React.FC = () => {
           >
             Trending LUTs
           </NavLink>
+          <NavLink 
+            to="/blog" 
+            className={({ isActive }) => 
+              cn("text-sm font-medium transition-colors hover:text-accent relative py-1.5",
+                isActive 
+                  ? "text-foreground after:absolute after:bottom-0 after:left-0 after:h-0.5 after:w-full after:bg-accent"
+                  : "text-muted-foreground"
+              )
+            }
+          >
+            Blog
+          </NavLink>
           
           {user ? (
             <DropdownMenu>
@@ -173,6 +185,19 @@ export const Navbar: React.FC = () => {
               onClick={() => setIsMenuOpen(false)}
             >
               Trending LUTs
+            </NavLink>
+            <NavLink 
+              to="/blog" 
+              className={({ isActive }) => 
+                cn("text-sm font-medium transition-colors hover:text-accent py-2 px-4 rounded-md",
+                  isActive 
+                    ? "bg-secondary text-foreground"
+                    : "text-muted-foreground"
+                )
+              }
+              onClick={() => setIsMenuOpen(false)}
+            >
+              Blog
             </NavLink>
           </div>
         </div>

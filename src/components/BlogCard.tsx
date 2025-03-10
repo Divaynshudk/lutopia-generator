@@ -12,6 +12,7 @@ export interface BlogPost {
   date: string;
   imageUrl: string;
   slug: string;
+  content: string;
 }
 
 interface BlogCardProps {
@@ -20,7 +21,7 @@ interface BlogCardProps {
 
 export const BlogCard: React.FC<BlogCardProps> = ({ post }) => {
   return (
-    <Card className="overflow-hidden h-full flex flex-col hover:shadow-lg transition-all duration-300 card-hover">
+    <Card className="overflow-hidden h-full flex flex-col hover:shadow-lg transition-all duration-300">
       <div className="overflow-hidden aspect-video">
         <img 
           src={post.imageUrl} 

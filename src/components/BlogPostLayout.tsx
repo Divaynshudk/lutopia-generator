@@ -3,11 +3,14 @@ import React from "react";
 import { Link, useParams, Navigate } from "react-router-dom";
 import { blogPosts } from "@/data/blogPosts";
 import { Button } from "@/components/ui/button";
-import { ArrowRight, Calendar } from "lucide-react";
+import { ArrowRight, Calendar, ArrowLeft } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 const BlogPostLayout: React.FC = () => {
   const { slug } = useParams<{ slug: string }>();
+  
+  // Find the current post from our blog data
+  // This is using the blog data from the Blog.tsx component
   const currentPost = blogPosts.find(post => post.slug === slug);
   
   // Get 3 related posts, excluding the current one
@@ -23,8 +26,9 @@ const BlogPostLayout: React.FC = () => {
     <div className="container py-12 px-4 md:px-6">
       <div className="mx-auto max-w-4xl">
         <div className="mb-4">
-          <Link to="/blog" className="text-primary hover:underline">
-            ← Back to all articles
+          <Link to="/blog" className="text-primary hover:underline flex items-center">
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Back to all articles
           </Link>
         </div>
         
@@ -43,19 +47,31 @@ const BlogPostLayout: React.FC = () => {
           />
         </div>
         
-        <div className="prose prose-lg max-w-none" dangerouslySetInnerHTML={{ __html: currentPost.content }} />
+        <div className="prose prose-lg max-w-none mb-12" dangerouslySetInnerHTML={{ __html: currentPost.content }} />
+        
+        {/* CTA Section */}
+        <div className="my-12 bg-secondary p-8 rounded-lg">
+          <h3 className="text-2xl font-bold mb-4">Ready to try Vision Grade's AI-powered LUTs?</h3>
+          <p className="mb-6">Transform your videos and photos with our intelligent color grading technology. Generate custom LUTs tailored to your specific content in seconds.</p>
+          <Button asChild size="lg">
+            <Link to="/generator">
+              Try the LUT Generator
+              <ArrowRight className="ml-2 h-4 w-4" />
+            </Link>
+          </Button>
+        </div>
         
         {/* Related Posts Section */}
         <div className="mt-16">
           <h2 className="text-2xl font-bold mb-6">You might also like</h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {relatedPosts.map(post => (
-              <Card key={post.id} className="overflow-hidden">
+              <Card key={post.id} className="overflow-hidden hover:shadow-lg transition-all duration-300">
                 <div className="aspect-video">
                   <img 
                     src={post.imageUrl} 
                     alt={post.title}
-                    className="w-full h-full object-cover"
+                    className="w-full h-full object-cover transition-transform hover:scale-105 duration-500"
                   />
                 </div>
                 <CardHeader className="pb-2">
